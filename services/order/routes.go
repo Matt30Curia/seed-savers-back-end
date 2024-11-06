@@ -26,11 +26,28 @@ func NewHandler(s types.OrderStore, us types.UserStore, sessionStore *auth.AuthS
 func (h *Handler) RegisterRouter(router *mux.Router) {
 	router.HandleFunc("/create-order", auth.WithJWTAuth(h.handleCreateOrder, h.usersStore, h.sessionStore)).Methods("POST")
 	router.HandleFunc("/update-order", auth.WithJWTAuth(h.handleModifyOrder, h.usersStore, h.sessionStore)).Methods("PUT")
-	router.HandleFunc("/get-order", auth.WithJWTAuth(h.handleGetOrder, h.usersStore, h.sessionStore)).Methods("GET")
-
+	router.HandleFunc("/sender-order", auth.WithJWTAuth(h.handleSenderOrder, h.usersStore, h.sessionStore)).Methods("GET")
+	router.HandleFunc("/reciver-order", auth.WithJWTAuth(h.handleReciverOrder, h.usersStore, h.sessionStore)).Methods("GET")
 }
 
-func (h *Handler) handleGetOrder(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) handleReciverOrder(w http.ResponseWriter, r *http.Request) {
+
+	sender, err := auth.GetUserIDFromContext(r.Context())
+	if err != nil {
+		utils.WriteError(w, http.StatusUnauthorized, err)
+		return
+	}
+
+	orders, err := h.store.GetOrdersBySender(sender)
+
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+	utils.WriteJSON(w, http.StatusAccepted, orders)
+}
+
+func (h *Handler) handleSenderOrder(w http.ResponseWriter, r *http.Request) {
 	reciver, err := auth.GetUserIDFromContext(r.Context())
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, err)
@@ -38,7 +55,7 @@ func (h *Handler) handleGetOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orders, err := h.store.GetOrdersByReciver(reciver)
-	
+
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
