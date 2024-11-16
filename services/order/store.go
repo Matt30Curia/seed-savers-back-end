@@ -45,7 +45,7 @@ func (s *Store) GetOrdersByReciver(reciverUserID int) ([]types.Order, error){
 		return nil, err
 	}
 
-	orders := make([]types.Order, 10)
+	orders := make([]types.Order,0)
 	var order *types.Order
 	for rows.Next() {
 		order, err = ScanRowIntoOrder(rows)
@@ -55,7 +55,7 @@ func (s *Store) GetOrdersByReciver(reciverUserID int) ([]types.Order, error){
 		orders = append(orders, *order)
 	}
 	
-	if order.ID == 0 {
+	if len(orders) == 0{
 		return nil, fmt.Errorf("order not found")
 	}
 
@@ -68,20 +68,20 @@ func (s *Store) GetOrdersBySender(senderUserID int) ([]types.Order, error){
 		return nil, err
 	}
 
-	orders := make([]types.Order, 10)
-	var order *types.Order
+	orders := make([]types.Order, 0)
+	
 	for rows.Next() {
-		order, err = ScanRowIntoOrder(rows)
+		order, err := ScanRowIntoOrder(rows)
 		if err != nil { 
 			return nil, err
 		}
 		orders = append(orders, *order)
 	}
 
-	if order.ID == 0 {
+	if len(orders) == 0 {
 		return nil, fmt.Errorf("order not found")
 	}
-
+    
 	return orders, nil
 }
 
@@ -106,7 +106,7 @@ func (s *Store) MakeOrder(senderUserID, reciverUserID, seedId, quantity int) err
         tx.Rollback() // Rollback in caso di errore
         return err
     }
-	fmt.Println(orderID)
+	
     // Inserisci i dettagli dell'ordine nella tabella `order_detail`
     _, err = tx.Exec("INSERT INTO order_detail (order_id, seed_id, quantity) VALUES (?, ?, ?)", orderID, seedId, quantity)
     if err != nil {
@@ -182,14 +182,14 @@ func ScanRowIntoOrder(rows *sql.Rows) (*types.Order, error) {
     // Popoliamo i campi letti
     order.OrderDate = orderDate
     order.State = state
-
+    println(senderUserID,"\n")
     // Popoliamo i campi Reciver e Sender con i dati degli utenti
     order.Sender = types.User{ID : senderUserID}
     order.Reciver = types.User{ID : reciverUserID}
 
     
     order.Seed = types.Seed{ID: seedId}
-
+    
     return order, nil
 }
 

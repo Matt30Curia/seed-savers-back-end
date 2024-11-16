@@ -2,6 +2,8 @@ package order
 
 import (
 	"backend/seed-savers/services/auth"
+	
+
 	//"backend/seed-savers/services/order"
 	"backend/seed-savers/types"
 	"backend/seed-savers/utils"
@@ -38,8 +40,9 @@ func (h *Handler) handleReciverOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orders, err := h.store.GetOrdersBySender(sender)
-
+	orders, err := h.store.GetOrdersByReciver(sender)
+	
+	
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
@@ -54,7 +57,8 @@ func (h *Handler) handleSenderOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	orders, err := h.store.GetOrdersByReciver(reciver)
+	orders, err := h.store.GetOrdersBySender(reciver)
+	
 
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
