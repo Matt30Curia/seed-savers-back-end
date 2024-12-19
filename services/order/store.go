@@ -46,9 +46,9 @@ func (s *Store) GetOrdersByReciver(reciverUserID int) ([]types.Order, error){
 	}
 
 	orders := make([]types.Order,0)
-	var order *types.Order
+	
 	for rows.Next() {
-		order, err = ScanRowIntoOrder(rows)
+		order, err := ScanRowIntoOrder(rows)
 		if err != nil {
 			return nil, err
 		}
@@ -92,7 +92,7 @@ func (s *Store) MakeOrder(senderUserID, reciverUserID, seedId, quantity int) err
     if err != nil {
         return err
     }
-
+    
     // Inserisci l'ordine nella tabella `orders`
     res, err := tx.Exec("INSERT INTO orders (sender_user_id, reciver_user_id) VALUES (?, ?)", senderUserID, reciverUserID)
     if err != nil {
@@ -134,15 +134,14 @@ func (s *Store) ModifyOrder(order *types.Order) error {
     
     // Inserisci l'ordine nella tabella `orders`
     _, err = tx.Exec(
-		"UPDATE orders SET sender_user_id = ?, reciver_user_id = ?, state = ? WHERE order_id = ?;",
-		order.Sender.ID, order.Reciver.ID, order.State, order.ID)	
+		"UPDATE orders SET state = ? WHERE order_id = ?;", order.State, order.ID)	
 	if err != nil {
         tx.Rollback() // Rollback in caso di errore
         return err
     }
 
     // Inserisci i dettagli dell'ordine nella tabella `order_detail`
-    _, err = tx.Exec("INSERT INTO order_detail (order_id, seed_id, quantity) VALUES (?, ?, ?)", order.ID, order.Seed.ID, order.Seed.Quantity)
+    _, err = tx.Exec("INSERT INTO order_detail (order_id, quantity) VALUES (?, ?)", order.ID, order.Seed.Quantity)
     if err != nil {
         tx.Rollback() // Rollback in caso di errore
         return err

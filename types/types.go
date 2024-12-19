@@ -39,10 +39,16 @@ type CreateSeedPayload struct {
 	Quantity     int    `json:"quantity" validate:"required"`
 }
 
+type UpdateOrderPayload struct {
+	OrderId      int    `json:"orderId" validate:"required"`
+	SeedQuantity int    `json:"seedQuantity"`
+	State        string `json:"state"`
+}
+
 type OrderPayload struct {
-	SenderID     int `json:"sender" validate:"required"`
-	SeedID       int `json:"seed" validate:"required"`
-	SeedQuantity int `json:"seedQuantity" validate:"required"`
+	SenderID     int    `json:"sender" validate:"required"`
+	SeedID       int    `json:"seedId" validate:"required"`
+	SeedQuantity int    `json:"seedQuantity"`
 }
 
 type User struct {
