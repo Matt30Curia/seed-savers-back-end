@@ -6,6 +6,7 @@ import (
 	"backend/seed-savers/utils"
 	"fmt"
 	"log"
+	"strconv"
 	"strings"
 
 	"net/http"
@@ -24,9 +25,53 @@ func NewHandler(s types.SeedStore, us types.UserStore, sessionStore *auth.AuthSt
 }
 
 func (h *Handler) RegisterRouter(router *mux.Router) {
+	//ogni seme non ha una quantità
 	router.HandleFunc("/seeds", h.handleSeeds).Methods("GET")
 	router.HandleFunc("/create-seed", auth.WithJWTAuth(h.handleCreateSeed, h.usersStore, h.sessionStore)).Methods("POST")
 	router.HandleFunc("/update-seed", auth.WithJWTAuth(h.handleUpdateSeed, h.usersStore, h.sessionStore)).Methods("PUT")
+	router.HandleFunc("/seeds/{vegetable}", h.handleGetSeedByVegetable).Methods("GET")
+	router.HandleFunc("/seeds/search/{name}", h.handleSearchSeed).Methods("GET")
+	router.HandleFunc("/seeds-owners/{seedID}", h.handleSeedOwners).Methods("GET")
+}
+
+func (h *Handler) handleSeedOwners(w http.ResponseWriter, r *http.Request){
+	seedID, err := strconv.Atoi(mux.Vars(r)["seedID"])
+	if err != nil{
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+	seeds, err := h.store.GetSeedOwnersByID(seedID)
+	if err != nil{
+		utils.WriteError(w, http.StatusBadRequest, err)
+		return
+	}
+	utils.WriteJSON(w, http.StatusOK, seeds)
+	
+}
+
+
+func (h *Handler) handleGetSeedByVegetable(w http.ResponseWriter, r *http.Request) {
+	vegetable := mux.Vars(r)["vegetable"]
+
+	seeds, err := h.store.GetSeedsByVegetable(vegetable)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, seeds)
+}
+
+func (h *Handler) handleSearchSeed(w http.ResponseWriter, r *http.Request) {
+	variety := mux.Vars(r)["name"]
+
+	seeds, err := h.store.GetSeedByVarieties(variety)
+	if err != nil {
+		utils.WriteError(w, http.StatusInternalServerError, err)
+		return
+	}
+
+	utils.WriteJSON(w, http.StatusOK, seeds)
 }
 
 func (h *Handler) handleSeeds(w http.ResponseWriter, r *http.Request) {

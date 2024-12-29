@@ -107,7 +107,7 @@ func (m *mockUserStore) GetSeedByVarieties(varieties string) (*types.Seed, error
 }
 
 // GetSeedOwnersByID implements types.SeedStore.
-func (m *mockUserStore) GetSeedOwnersByID(id int) (map[int]string, error) {
+func (m *mockUserStore) GetSeedOwnersByID(id int) (map[string]int, error) {
 	panic("unimplemented")
 }
 

@@ -11,7 +11,7 @@ type UserRecoveryPassword struct {
 }
 
 type UserRegisterPayload struct {
-	Name     string `json:"Name" validate:"required"`
+	Name     string `json:"name" validate:"required"`
 	Email    string `json:"email" validate:"required,email"`
 	Password string `json:"password" validate:"required,min=3,max=130"`
 }
@@ -120,5 +120,5 @@ type SeedStore interface {
 	GetSeedByVarieties(varieties string) (*Seed, error)
 	GetSeedsByVegetable(vegetable string) ([]Seed, error)
 	CreateSeed(*CreateSeedPayload) error
-	GetSeedOwnersByID(id int) (map[int]string, error)
+	GetSeedOwnersByID(id int) (map[string]int, error)
 }
