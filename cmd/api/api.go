@@ -32,7 +32,7 @@ func (a *ApiServer) Run() error {
 
 	userHandler := user.NewHandler(userStore, authSessionStore)
 	seedHandler := seed.NewHandler(seedStore, userStore, authSessionStore)
-	orderHandler := order.NewHandler(orderStore, userStore, authSessionStore)
+	orderHandler := order.NewHandler(orderStore, userStore, seedStore, authSessionStore)
 
 	userHandler.RegisterRouter(router)
 	seedHandler.RegisterRouter(router)

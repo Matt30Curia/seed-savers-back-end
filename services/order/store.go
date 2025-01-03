@@ -28,7 +28,7 @@ func (s *Store) GetOrdersById(ID int) (*types.Order, error) {
 
 	// Creiamo una nuova struttura ordine
 	order := new(types.Order)
-	
+
 	// Iteriamo sulle righe della query
 	for rows.Next() {
 		order, err = ScanRowIntoOrder(rows)
@@ -46,9 +46,19 @@ func (s *Store) GetOrdersById(ID int) (*types.Order, error) {
 }
 
 // GetOrdersByReciver restituisce una lista di ordini ricevuti da un utente dato l'ID
-func (s *Store) GetOrdersByReciver(reciverUserID int) ([]types.Order, error) {
+func (s *Store) GetIncomingOrders(reciverUserID int) ([]types.Order, error) {
+
+	query := `SELECT o.*, reciver.name, a.state, a.city, a.street, a.cap, 
+			  a.province, a.number, a.apartment_number, s.img, s.variety_name,  od.quantity, s.seed_id
+			  FROM orders o
+ 			  JOIN users reciver ON o.reciver_user_id = reciver.user_id
+			  LEFT JOIN adress a ON reciver.user_id = a.id
+			  JOIN order_detail od ON o.order_id = od.order_id
+			  JOIN seed s ON od.seed_id = s.seed_id
+			  WHERE o.reciver_user_id = ?;`
+
 	// Query per ottenere tutti gli ordini ricevuti da un utente specifico
-	rows, err := s.db.Query("SELECT * FROM orders WHERE reciver_user_id=?", reciverUserID)
+	rows, err := s.db.Query(query, reciverUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -74,9 +84,18 @@ func (s *Store) GetOrdersByReciver(reciverUserID int) ([]types.Order, error) {
 }
 
 // GetOrdersBySender restituisce una lista di ordini inviati da un utente dato l'ID
-func (s *Store) GetOrdersBySender(senderUserID int) ([]types.Order, error) {
+func (s *Store) GetOrdersToBeSent(senderUserID int) ([]types.Order, error) {
+
+	query := `SELECT o.*, sender.name, a.state, a.city, a.street, a.cap, 
+			  a.province, a.number, a.apartment_number, s.img, s.variety_name,  od.quantity, s.seed_id
+			  FROM orders o
+	 		  JOIN users sender ON o.sender_user_id = sender.user_id
+			  LEFT JOIN adress a ON sender.user_id = a.id
+			  JOIN order_detail od ON o.order_id = od.order_id
+			  JOIN seed s ON od.seed_id = s.seed_id
+			  WHERE o.sender_user_id = ?;`
 	// Query per ottenere tutti gli ordini inviati da un utente specifico
-	rows, err := s.db.Query("SELECT * FROM orders WHERE sender_user_id=?", senderUserID)
+	rows, err := s.db.Query(query, senderUserID)
 	if err != nil {
 		return nil, err
 	}
@@ -139,6 +158,38 @@ func (s *Store) MakeOrder(senderUserID, reciverUserID, seedId, quantity int) err
 	return nil
 }
 
+func (s *Store) DeleteOrder(ID int) error {
+	// Inizio della transazione
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+
+	// Rollback automatico se qualcosa va storto
+	defer tx.Rollback()
+
+	// Inseriamo l'ordine nella tabella orders
+	_, err = tx.Exec("DELETE FROM order_detail where order_id = ?;",ID)
+	if err != nil {
+		return err
+	}
+
+	// Inseriamo i dettagli dell'ordine nella tabella order_detail
+	_, err = tx.Exec("DELETE FROM orders where order_id = ? ;", ID)
+	if err != nil {
+		return err
+	}
+
+	// Confermiamo la transazione
+	err = tx.Commit()
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+
 // ModifyOrder modifica un ordine esistente, come lo stato e la quantità di semi
 func (s *Store) ModifyOrder(order *types.Order) error {
 	// Inizio della transazione
@@ -173,36 +224,81 @@ func (s *Store) ModifyOrder(order *types.Order) error {
 
 // ScanRowIntoOrder esegue il binding dei dati di una riga su un oggetto Order
 func ScanRowIntoOrder(rows *sql.Rows) (*types.Order, error) {
-	// Creiamo un nuovo oggetto Order da riempire con i dati della riga
+	// Create a new Order object to fill with row data
 	order := new(types.Order)
 
-	// Variabili temporanee per i campi letti dalla query
-	var senderUserID, reciverUserID, seedId int
-	var state string
-	var orderDate time.Time
-
-	// Effettuiamo la scansione della riga
-	err := rows.Scan(
-		&order.ID,           // order_id
-		&senderUserID,       // sender_user_id
-		&reciverUserID,      // reciver_user_id
-		&orderDate,          // order_date
-		&state,              // state (è una stringa che rappresenta un ENUM)
+	// Temporary variables for scanning
+	var (
+		orderID       int
+		senderUserID  int
+		reciverUserID int
+		orderDate     time.Time
+		orderState    string
+		senderName    string
+		country       string
+		city          string
+		street        string
+		cap           string
+		province      string
+		aptNumber     string
+		number        uint16
+		img           string
+		varietyName   string
+		quantity      int
+		seedId        int
 	)
+
+	// Scan the row into our variables - matched with the column order provided
+	err := rows.Scan(
+		&orderID,       // order_id
+		&senderUserID,  // sender_user_id
+		&reciverUserID, // reciver_user_id
+		&orderDate,     // order_date
+		&orderState,    // state
+		&senderName,    // sender_name
+		&country,       // state
+		&city,          // city
+		&street,        // street
+		&cap,           // cap
+		&province,      // province
+		&number,        // number
+		&aptNumber,     // apartment_number
+		&img,           // img
+		&varietyName,   // variety_name
+		&quantity,      // quantity
+		&seedId,
+	)
+
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error scanning order row: %w", err)
 	}
 
-	// Popoliamo i campi letti dalla query
+	// Populate Order fields
+	
+	order.ID = orderID
+	order.State = orderState
 	order.OrderDate = orderDate
-	order.State = state
+	order.SenderID = senderUserID
+	order.ReciverID = reciverUserID
 
-	// Popoliamo i campi Reciver e Sender con i dati degli utenti
-	order.Sender = types.User{ID: senderUserID}
-	order.Reciver = types.User{ID: reciverUserID}
+	// Construct the Address
+	order.ReciverAdress = types.Adress{
+		Street:           street,
+		City:             city,
+		Cap:              cap,
+		Province:         province,
+		Number:           number,
+		Apartment_number: aptNumber,
+		Country:          country, // Now using the actual scanned value
+	}
 
-	// Popoliamo il seme associato all'ordine
-	order.Seed = types.Seed{ID: seedId}
+	// Construct the Seed
+	order.Seed = types.Seed{
+		ID:           seedId,
+		Image:        img,
+		Variety_name: varietyName,
+		Quantity:     quantity,
+	}
 
 	return order, nil
 }

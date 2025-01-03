@@ -7,11 +7,11 @@ import (
 	"backend/seed-savers/types"
 	"backend/seed-savers/utils"
 
-	"strings"
-	"time"
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
+	"time"
 
 	"github.com/gorilla/mux"
 	"github.com/markbates/goth/gothic"
@@ -33,7 +33,7 @@ func (h *Handler) RegisterRouter(router *mux.Router) {
 	router.HandleFunc("/register/adress", auth.WithJWTAuth(h.handlePOSTAdress, h.store, h.sessionStore)).Methods("POST")
 	router.HandleFunc("/register/adress", auth.WithJWTAuth(h.handlePUTAdress, h.store, h.sessionStore)).Methods("PUT")
 	router.HandleFunc("/user/delete", auth.WithJWTAuth(h.handleDeleteUser, h.store, h.sessionStore)).Methods("DELETE")
-	router.HandleFunc("/user/reset",h.handleResetSendEmail).Methods(http.MethodPost) 
+	router.HandleFunc("/user/reset", h.handleResetSendEmail).Methods(http.MethodPost)
 	router.HandleFunc("/user/reset/{encripted:.*}", h.handleResetPassword).Methods(http.MethodPost)
 
 	//login whith google
@@ -45,7 +45,7 @@ func (h *Handler) RegisterRouter(router *mux.Router) {
 
 func (h *Handler) handleResetSendEmail(w http.ResponseWriter, r *http.Request) {
 
-	payload, err := utils.DecodePayload[types.UserRecoveryPassword](w,r)
+	payload, err := utils.DecodePayload[types.UserRecoveryPassword](w, r)
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, err)
 		return
@@ -57,9 +57,8 @@ func (h *Handler) handleResetSendEmail(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	const layout = "Jan 2, 2006 at 3:04pm (MST)"
-	token, _ := utils.GetAESEncrypted(fmt.Sprintf("%v&%v",user.Email, time.Now().Format(layout)))
-	
-        
+	token, _ := utils.GetAESEncrypted(fmt.Sprintf("%v&%v", user.Email, time.Now().Format(layout)))
+
 	subject := "Subject: Reset Password from Seed Savers\n"
 	mime := "MIME-version: 1.0;\nContent-Type: text/html; charset=\"UTF-8\";\n\n"
 	body := fmt.Sprintf("<html><body><h1>clicca il link per il recupero</h1><a href='http://localhost:3000/user/reset/%v'>click this lin </a></body></html>", token)
@@ -74,7 +73,7 @@ func (h *Handler) handleResetSendEmail(w http.ResponseWriter, r *http.Request) {
 }
 
 func (h *Handler) handleResetPassword(w http.ResponseWriter, r *http.Request) {
-	payload, err := utils.DecodePayload[types.UserResetPassword](w,r)
+	payload, err := utils.DecodePayload[types.UserResetPassword](w, r)
 	if err != nil {
 		utils.WriteError(w, http.StatusUnauthorized, err)
 		return
@@ -85,43 +84,42 @@ func (h *Handler) handleResetPassword(w http.ResponseWriter, r *http.Request) {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	
-	
-	parts := strings.Split(string(emailAndTime),"&")
-	mail:= parts[0]
+
+	parts := strings.Split(string(emailAndTime), "&")
+	mail := parts[0]
 	const layout = "Jan 2, 2006 at 3:04pm (MST)"
-	tIme , err := time.Parse(layout, parts[1])
-	
+	tIme, err := time.Parse(layout, parts[1])
+
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	
-	if (uint8(time.Until(tIme).Abs().Hours()) >= uint8(config.Envs.TokenExpirationInHour)){
+
+	if uint8(time.Until(tIme).Abs().Hours()) >= uint8(config.Envs.TokenExpirationInHour) {
 		utils.WriteError(w, http.StatusForbidden, fmt.Errorf("token expired. Retry"))
 		return
 	}
-	
+
 	user, err := h.store.GetUserByEmail(string(mail))
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
-	
+
 	hashPassword, err := auth.HashPassword(payload.Password)
 	if err != nil {
 		utils.WriteError(w, http.StatusInternalServerError, err)
 		return
 	}
 	user.Password = hashPassword
-	
+
 	err = h.store.ModifyUser(user)
 	if err != nil {
 		utils.WriteError(w, http.StatusBadRequest, err)
 		return
 	}
 	utils.WriteJSON(w, http.StatusOK, nil)
-	
+
 }
 
 func (h *Handler) handleDeleteUser(w http.ResponseWriter, r *http.Request) {
@@ -159,7 +157,7 @@ func (h *Handler) handlePOSTAdress(w http.ResponseWriter, r *http.Request) {
 
 	err = h.store.CreateAdress(&types.Adress{
 		ID:               id,
-		State:            payload.State,
+		Country:          payload.State,
 		Street:           payload.Street,
 		City:             payload.City,
 		Cap:              payload.Cap,
@@ -191,7 +189,7 @@ func (h *Handler) handlePUTAdress(w http.ResponseWriter, r *http.Request) {
 	}
 	err = h.store.ModifyAdress(&types.Adress{
 		ID:               id,
-		State:            payload.State,
+		Country:            payload.State,
 		Street:           payload.Street,
 		City:             payload.City,
 		Cap:              payload.Cap,

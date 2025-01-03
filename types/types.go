@@ -46,9 +46,9 @@ type UpdateOrderPayload struct {
 }
 
 type OrderPayload struct {
-	SenderID     int    `json:"sender" validate:"required"`
-	SeedID       int    `json:"seedId" validate:"required"`
-	SeedQuantity int    `json:"seedQuantity"`
+	SenderID     int `json:"sender" validate:"required"`
+	SeedID       int `json:"seedId" validate:"required"`
+	SeedQuantity int `json:"seedQuantity"`
 }
 
 type User struct {
@@ -63,7 +63,7 @@ type User struct {
 
 type Adress struct {
 	ID               int    `json:"id"`
-	State            string `json:"state"`
+	Country          string `json:"state"`
 	City             string `json:"city"`
 	Street           string `json:"street"`
 	Cap              string `json:"cap"`
@@ -82,20 +82,24 @@ type Seed struct {
 }
 
 type Order struct {
-	ID        int       `json:"order_id"`
-	State     string    `json:"state"`
-	OrderDate time.Time `json:"order-date"`
-	Reciver   User      `json:"reciver"`
-	Sender    User      `json:"sender"`
-	Seed      Seed      `json:"seed"`
+	ID            int       `json:"order_id"`
+	State         string    `json:"state"`
+	OrderDate     time.Time `json:"order-date"`
+	ReciverID     int       `json:"reciverID"`
+	ReciverName   string    `json:"reciverName"`
+	ReciverAdress Adress    `json:"adress"`
+	SenderID      int       `json:"senderID"`
+	SenderName    string    `json:"senderName"`
+	Seed          Seed      `json:"seed"`
 }
 
 type OrderStore interface {
 	GetOrdersById(ID int) (*Order, error)
-	GetOrdersByReciver(reciverUserID int) ([]Order, error)
-	GetOrdersBySender(senderUserID int) ([]Order, error)
+	GetIncomingOrders(reciverUserID int) ([]Order, error)
+	GetOrdersToBeSent(senderUserID int) ([]Order, error)
 	MakeOrder(reUserID, reciverUserID, seedId, quantity int) error
 	ModifyOrder(order *Order) error
+	DeleteOrder(ID int) error
 }
 
 type UserStore interface {
@@ -121,4 +125,5 @@ type SeedStore interface {
 	GetSeedsByVegetable(vegetable string) ([]Seed, error)
 	CreateSeed(*CreateSeedPayload) error
 	GetSeedOwnersByID(id int) (map[string]int, error)
+	UserSeedQuantity(id, seedId int) int
 }

@@ -146,7 +146,7 @@ func (s *Store) CreateAdress(adress *types.Adress) error {
 	defer tx.Rollback() // Esegui rollback in caso di errore
 
 	// Inserisci l'indirizzo
-	_, err = tx.Exec("INSERT INTO adress (id, state, city, street, cap, province, number, apartment_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", adress.ID, adress.State, adress.City, adress.Street, adress.Cap, adress.Province, adress.Number, adress.Apartment_number)
+	_, err = tx.Exec("INSERT INTO adress (id, state, city, street, cap, province, number, apartment_number) VALUES (?, ?, ?, ?, ?, ?, ?, ?)", adress.ID, adress.Country, adress.City, adress.Street, adress.Cap, adress.Province, adress.Number, adress.Apartment_number)
 	if err != nil {
 		return err
 	}
@@ -165,7 +165,7 @@ func (s *Store) ModifyAdress(adress *types.Adress) error {
 	defer tx.Rollback() // Esegui rollback in caso di errore
 
 	// Modifica l'indirizzo
-	_, err = tx.Exec("UPDATE adress SET state = ?, city = ?, street = ?, cap = ?, province = ?, number = ?, apartment_number = ? WHERE id = ?", adress.State, adress.City, adress.Street, adress.Cap, adress.Province, adress.Number, adress.Apartment_number, adress.ID)
+	_, err = tx.Exec("UPDATE adress SET state = ?, city = ?, street = ?, cap = ?, province = ?, number = ?, apartment_number = ? WHERE id = ?", adress.Country, adress.City, adress.Street, adress.Cap, adress.Province, adress.Number, adress.Apartment_number, adress.ID)
 	if err != nil {
 		return err
 	}
@@ -201,7 +201,7 @@ func (s *Store) GetCompleteUserByEmail(email string) (*types.User, error) {
 }
 
 // GetCompleteUserByID restituisce un utente con tutti i dettagli (indirizzo e semi) usando l'ID
-func (s *Store) GetCompleteUserByID(ID int) (*types.User, error) {
+func (s *Store)  GetCompleteUserByID(ID int) (*types.User, error) {
 	query := `
 		SELECT u.user_id, u.NAME, u.email, u.credits, 
 		       a.state, a.city, a.street, a.cap, a.province, a.number, a.apartment_number, 
@@ -226,7 +226,7 @@ func (s *Store) GetCompleteUserByID(ID int) (*types.User, error) {
 	return u, nil
 }
 
-// ModifySeedQuantity aggiorna la quantità di semi per un utente
+// ModifySeedQuantity aggiorna la quantità di semi per un utente ha bisogno solo di ID e QUANTITA'
 func (s *Store) ModifySeedQuantity(seed *types.Seed, userID int) error {
 	// Inizia una transazione
 	tx, err := s.db.Begin()
@@ -283,7 +283,7 @@ func ScanRowsIntoCompleteUser(rows *sql.Rows) (*types.User, error) {
 			&user.Password,
 			&user.Credits,
 			&address.ID,
-			&address.State,
+			&address.Country,
 			&address.City,
 			&address.Street,
 			&address.Cap,

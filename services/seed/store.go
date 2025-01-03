@@ -192,6 +192,24 @@ func (s *Store) UpdateSeed(seed *types.Seed) error {
 	return tx.Commit()
 }
 
+func (s *Store) UserSeedQuantity(id, seedId int) int{
+	rows, err := s.db.Query("SELECT quantity FROM users_seed WHERE user_id = ? AND seed_id = ?", id, seedId)
+	if err != nil {
+		return -1
+	}
+	defer rows.Close()
+
+	var quantity int
+	rows.Next()
+	err = rows.Scan(&quantity)
+	if err != nil || quantity <= 0{
+		return -1
+	}
+	
+	return quantity
+}
+
+
 // ScanRowIntoSeed esegue il binding dei dati di una riga su un oggetto Seed
 func ScanRowIntoSeed(rows *sql.Rows) (*types.Seed, error) {
 	seed := new(types.Seed)
@@ -214,35 +232,3 @@ func ScanRowIntoSeed(rows *sql.Rows) (*types.Seed, error) {
 
 	return seed, nil
 }
-
-
-/*
-SELECT
-    us.user_id,
-    us.seed_id,
-    u.name,
-    us.quantity
-FROM
-    users_seed us
-INNER JOIN
-    users u ON us.user_id = u.user_id
-where us.seed_id = 4;
-*/
-
-/*SELECT
-    s.seed_id,
-    s.img,
-    s.variety_name,
-    s.description,
-    s.vegetable,
-    us.user_id,
-    u.name,
-    us.quantity
-FROM
-    seed s
-
-INNER JOIN
-    users_seed us ON s.seed_id = us.seed_id
-INNER JOIN
-    users u ON us.user_id = u.user_id
-where s.seed_id = !!!!!il tuo id varieta;*/
