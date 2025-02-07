@@ -1,6 +1,6 @@
 
 
-# Seed Exchange Backend
+# Seed Savers Backend
 
 This project provides the backend for a seed exchange platform, built using Go. It includes features for user authentication, data storage, and managing seed exchanges. The backend uses migrations for database management and supports JWT-based authentication for secure access.
 
